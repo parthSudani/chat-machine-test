@@ -81,6 +81,60 @@ export class ChatRepository {
       throw error;
     }
   }
+
+  async findUserChats(
+    userId: string,
+    limit: number,
+    cursor?: string
+  ): Promise<{
+    chats: Array<{
+      chatId: string;
+      type: string;
+      memberIds: string[];
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+    nextCursor: string | null;
+  }> {
+    const rawChats = await prisma.chat.findMany({
+      where: {
+        members: {
+          some: {
+            userId,
+          },
+        },
+      },
+      take: limit + 1,
+      cursor: cursor ? { id: cursor } : undefined,
+      skip: cursor ? 1 : 0,
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      include: {
+        members: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    let nextCursor: string | null = null;
+    let resultChats = rawChats;
+
+    if (rawChats.length > limit) {
+      resultChats = rawChats.slice(0, limit);
+      nextCursor = resultChats[resultChats.length - 1]?.id || null;
+    }
+
+    const chats = resultChats.map((c) => ({
+      chatId: c.id,
+      type: c.type,
+      memberIds: c.members.map((m) => m.userId),
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
+
+    return { chats, nextCursor };
+  }
 }
 
 export const chatRepository = new ChatRepository();

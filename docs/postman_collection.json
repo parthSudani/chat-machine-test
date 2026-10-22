@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Chat Backend API Collection",
-    "description": "Collection for testing Chat Backend assessment endpoints",
+    "description": "Complete collection for testing all 6 mandatory Chat Backend assessment APIs and authentication flows",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -13,6 +13,16 @@
     {
       "key": "token",
       "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "11111111-1111-4111-8111-111111111111",
+      "type": "string"
+    },
+    {
+      "key": "otherUserId",
+      "value": "22222222-2222-4222-8222-222222222222",
       "type": "string"
     },
     {
@@ -40,7 +50,7 @@
       }
     },
     {
-      "name": "Auth - Register",
+      "name": "1. Auth - Register",
       "request": {
         "method": "POST",
         "header": [
@@ -58,7 +68,7 @@
       }
     },
     {
-      "name": "Auth - Login",
+      "name": "2. Auth - Login",
       "request": {
         "method": "POST",
         "header": [
@@ -76,7 +86,21 @@
       }
     },
     {
-      "name": "Chat - Create 1:1 Chat",
+      "name": "3. Auth - Me",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
+        }
+      }
+    },
+    {
+      "name": "Mandatory 1: POST /chat/create",
       "request": {
         "method": "POST",
         "header": [
@@ -85,7 +109,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"userAId\": \"user-a-uuid\",\n  \"userBId\": \"user-b-uuid\"\n}"
+          "raw": "{\n  \"userAId\": \"{{userId}}\",\n  \"userBId\": \"{{otherUserId}}\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/chat/create",
@@ -95,7 +119,7 @@
       }
     },
     {
-      "name": "Chat - Mark Message Read",
+      "name": "Mandatory 2: POST /chat/:chatId/message/send",
       "request": {
         "method": "POST",
         "header": [
@@ -104,7 +128,44 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"userId\": \"user-a-uuid\"\n}"
+          "raw": "{\n  \"senderId\": \"{{userId}}\",\n  \"text\": \"Hello, this is a test message!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/chat/{{chatId}}/message/send",
+          "host": ["{{baseUrl}}"],
+          "path": ["chat", "{{chatId}}", "message", "send"]
+        }
+      }
+    },
+    {
+      "name": "Mandatory 3: GET /chat/:chatId/messages",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/chat/{{chatId}}/messages?limit=50",
+          "host": ["{{baseUrl}}"],
+          "path": ["chat", "{{chatId}}", "messages"],
+          "query": [
+            { "key": "limit", "value": "50" },
+            { "key": "cursor", "value": "", "disabled": true }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Mandatory 4: POST /chat/:chatId/message/:messageId/read",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/chat/{{chatId}}/message/{{messageId}}/read",
@@ -114,7 +175,7 @@
       }
     },
     {
-      "name": "Chat - Update Last Seen",
+      "name": "Mandatory 5: POST /chat/:chatId/lastseen",
       "request": {
         "method": "POST",
         "header": [
@@ -123,12 +184,30 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"userId\": \"user-a-uuid\",\n  \"messageId\": \"{{messageId}}\"\n}"
+          "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"messageId\": \"{{messageId}}\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/chat/{{chatId}}/lastseen",
           "host": ["{{baseUrl}}"],
           "path": ["chat", "{{chatId}}", "lastseen"]
+        }
+      }
+    },
+    {
+      "name": "Mandatory 6: GET /user/:userId/chats",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/{{userId}}/chats?limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "{{userId}}", "chats"],
+          "query": [
+            { "key": "limit", "value": "20" },
+            { "key": "cursor", "value": "", "disabled": true }
+          ]
         }
       }
     }

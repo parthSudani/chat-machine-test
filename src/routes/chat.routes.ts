@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import { chatController } from '../controllers/chat.controller';
+import { messageController } from '../controllers/message.controller';
 import { readReceiptController } from '../controllers/readReceipt.controller';
 import { lastSeenController } from '../controllers/lastSeen.controller';
 import { validateRequest } from '../middleware/validate.middleware';
 import { createChatSchema } from '../validation/chat.schema';
 import {
+  sendMessageSchema,
+  getMessagesSchema,
   markMessageReadSchema,
   updateLastSeenSchema,
 } from '../validation/message.schema';
@@ -15,6 +18,22 @@ const router = Router();
 // 1. POST /chat/create
 router.post('/create', authenticate, validateRequest(createChatSchema), (req, res, next) =>
   chatController.create(req, res, next)
+);
+
+// 2. POST /chat/:chatId/message/send
+router.post(
+  '/:chatId/message/send',
+  authenticate,
+  validateRequest(sendMessageSchema),
+  (req, res, next) => messageController.sendMessage(req, res, next)
+);
+
+// 3. GET /chat/:chatId/messages?limit=50
+router.get(
+  '/:chatId/messages',
+  authenticate,
+  validateRequest(getMessagesSchema),
+  (req, res, next) => messageController.getMessages(req, res, next)
 );
 
 // 4. POST /chat/:chatId/message/:messageId/read

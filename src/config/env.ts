@@ -14,6 +14,10 @@ const envSchema = z.object({
   FIREBASE_PROJECT_ID: z.string().default('chat-backend-dev'),
   FIRESTORE_EMULATOR_HOST: z.string().optional(),
   GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
+  CORS_ORIGIN: z.string().default('*'),
+  RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('60000'),
+  RATE_LIMIT_MAX: z.string().transform(Number).default('100'),
+  AUTH_RATE_LIMIT_MAX: z.string().transform(Number).default('30'),
 });
 
 const parsed = envSchema.safeParse(process.env);

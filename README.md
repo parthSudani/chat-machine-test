@@ -173,6 +173,33 @@ curl -X POST http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/las
 }
 ```
 
+### 6. List User Chats: `GET /user/:userId/chats`
+**Request**:
+```bash
+curl -X GET "http://localhost:3000/user/11111111-1111-4111-8111-111111111111/chats?limit=20" \
+  -H "Authorization: Bearer <token>"
+```
+**Response (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "chats": [
+      {
+        "chatId": "33333333-3333-4333-8333-333333333333",
+        "type": "DIRECT",
+        "memberIds": [
+          "11111111-1111-4111-8111-111111111111",
+          "22222222-2222-4222-8222-222222222222"
+        ],
+        "createdAt": "2026-10-22T10:00:00.000Z"
+      }
+    ],
+    "nextCursor": null
+  }
+}
+```
+
 ## 6. Concurrency & Duplicate Prevention Architecture
 
 - For every direct 1:1 chat between User A and User B, the backend deterministically sorts user IDs canonically:

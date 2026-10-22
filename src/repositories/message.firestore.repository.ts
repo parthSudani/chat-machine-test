@@ -125,6 +125,52 @@ export class MessageFirestoreRepository {
   }
 
   /**
+   * Chronologically retrieves messages with deterministic ordering and cursor pagination
+   */
+  async getChatMessages(
+    chatId: string,
+    limit: number,
+    cursor?: string
+  ): Promise<{ messages: FirestoreMessage[]; nextCursor: string | null }> {
+    let query = this.getChatRef(chatId)
+      .collection('messages')
+      .orderBy('createdAt', 'asc')
+      .orderBy('__name__', 'asc')
+      .limit(limit + 1);
+
+    if (cursor) {
+      const cursorDoc = await this.getMessageRef(chatId, cursor).get();
+      if (cursorDoc.exists) {
+        query = query.startAfter(cursorDoc);
+      }
+    }
+
+    const snapshot = await query.get();
+    let hasMore = false;
+    let docs = snapshot.docs;
+
+    if (docs.length > limit) {
+      hasMore = true;
+      docs = docs.slice(0, limit);
+    }
+
+    const messages = docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        chatId: data.chatId as string,
+        senderId: data.senderId as string,
+        text: data.text as string,
+        createdAt: data.createdAt as Timestamp,
+      };
+    });
+
+    const nextCursor = hasMore && docs.length > 0 ? docs[docs.length - 1]!.id : null;
+
+    return { messages, nextCursor };
+  }
+
+  /**
    * Idempotently saves a read receipt preserving the original read timestamp
    */
   async recordReadReceiptIdempotent(

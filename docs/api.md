@@ -224,12 +224,12 @@ Updates the user's last-seen pointer in Firestore, enforcing monotonicity.
 ---
 
 ### 6. GET `/user/:userId/chats`
-Returns the list of chats and member IDs for a user from PostgreSQL.
+Returns the list of chats and member IDs for the authenticated user from PostgreSQL.
 
 - **Query Parameters**:
-  - `page` (integer, default: 1): Page index.
-  - `limit` (integer, default: 20, max: 100): Items per page.
-- **Authorization**: Requester must be `userId` or an authorized administrator.
+  - `limit` (integer, default: 20, min: 1, max: 100): Page size.
+  - `cursor` (UUID, optional): Chat ID to paginate from (cursor-based pagination).
+- **Authorization**: Caller must be authenticated, and `req.user.id` must match `userId`.
 
 - **Response (200 OK)**:
 ```json
@@ -238,22 +238,16 @@ Returns the list of chats and member IDs for a user from PostgreSQL.
   "data": {
     "chats": [
       {
-        "id": "cuid_chat_1",
+        "chatId": "33333333-3333-4333-8333-333333333333",
         "type": "DIRECT",
-        "createdAt": "2026-10-22T08:05:00.000Z",
-        "updatedAt": "2026-10-22T08:05:00.000Z",
-        "members": [
-          { "userId": "cuid_user_1", "role": "MEMBER" },
-          { "userId": "cuid_user_2", "role": "MEMBER" }
-        ]
+        "memberIds": [
+          "11111111-1111-4111-8111-111111111111",
+          "22222222-2222-4222-8222-222222222222"
+        ],
+        "createdAt": "2026-10-22T10:00:00.000Z"
       }
     ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 1,
-      "totalPages": 1
-    }
+    "nextCursor": null
   }
 }
 ```

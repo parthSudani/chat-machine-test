@@ -6,14 +6,14 @@
   - [x] Returns existing chat ID or creates a new 1:1 chat
   - [x] Prevents duplicate conversations (canonical pair constraint)
   - [x] Prevents duplicate conversations under concurrent requests
-- [ ] **POST /chat/:chatId/message/send**
-  - [ ] Accepts `senderId`, `text`
-  - [ ] Verifies chat membership
-  - [ ] Saves message in Firestore with server timestamp
-- [ ] **GET /chat/:chatId/messages?limit=50**
-  - [ ] Returns authorized chat messages
-  - [ ] Ordered chronologically (stable ordering with document ID tie-breaker)
-  - [ ] Supports cursor-based pagination
+- [x] **POST /chat/:chatId/message/send**
+  - [x] Accepts `senderId`, `text`
+  - [x] Verifies chat membership
+  - [x] Saves message in Firestore with server timestamp
+- [x] **GET /chat/:chatId/messages?limit=50**
+  - [x] Returns authorized chat messages
+  - [x] Ordered chronologically (stable ordering with document ID tie-breaker)
+  - [x] Supports cursor-based pagination
 - [x] **POST /chat/:chatId/message/:messageId/read**
   - [x] Accepts `userId`
   - [x] Saves idempotent read receipt in Firestore under `chats/{chatId}/messages/{messageId}/receipts/{userId}`
@@ -21,9 +21,9 @@
   - [x] Accepts `userId`, `messageId`
   - [x] Updates user's last-seen message and timestamp in `chats/{chatId}/members/{userId}`
   - [x] Prevents last-seen pointer from moving backwards (monotonicity guarantee)
-- [ ] **GET /user/:userId/chats**
-  - [ ] Returns chats and member IDs from PostgreSQL
-  - [ ] Includes pagination support
+- [x] **GET /user/:userId/chats**
+  - [x] Returns chats and member IDs from PostgreSQL
+  - [x] Includes pagination support
 
 ## 2. Bonus Features
 - [ ] Group chat creation and membership management (`POST /chat/group`, `POST /chat/:chatId/members`, `DELETE /chat/:chatId/members/:userId`)
