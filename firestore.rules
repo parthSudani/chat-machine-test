@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Top-level chats collection
+    match /chats/{chatId} {
+      // Direct write to chat document is restricted to backend services (Firebase Admin SDK)
+      allow read, write: if false;
+
+      // Messages in chats/{chatId}/messages/{messageId}
+      match /messages/{messageId} {
+        // Read messages allowed for authenticated users
+        allow read: if request.auth != null;
+        // Create message allowed if sender matches authenticated user
+        allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
+        // Message bodies and metadata are immutable and append-only
+        allow update, delete: if false;
+
+        // Read receipts subcollection: chats/{chatId}/messages/{messageId}/receipts/{userId}
+        match /receipts/{userId} {
+          allow read: if request.auth != null;
+          allow create, update: if request.auth != null && request.auth.uid == userId;
+          allow delete: if false;
+        }
+
+        // Read receipts alias: chats/{chatId}/messages/{messageId}/reads/{userId}
+        match /reads/{userId} {
+          allow read: if request.auth != null;
+          allow create, update: if request.auth != null && request.auth.uid == userId;
+          allow delete: if false;
+        }
+      }
+
+      // Member last-seen state: chats/{chatId}/members/{userId}
+      match /members/{userId} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if false;
+      }
+
+      // Last-seen alias: chats/{chatId}/lastSeen/{userId}
+      match /lastSeen/{userId} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if false;
+      }
+    }
+  }
+}

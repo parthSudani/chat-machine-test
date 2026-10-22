@@ -48,7 +48,7 @@ export class MessageFirestoreRepository {
   }
 
   /**
-   * Helper to get receipt document reference
+   * Helper to get receipt document reference (receipts)
    */
   getReceiptRef(
     chatId: string,
@@ -59,10 +59,28 @@ export class MessageFirestoreRepository {
   }
 
   /**
-   * Helper to get member last-seen document reference
+   * Helper to get read document reference (reads alias)
+   */
+  getReadRef(
+    chatId: string,
+    messageId: string,
+    userId: string
+  ): DocumentReference {
+    return this.getMessageRef(chatId, messageId).collection('reads').doc(userId);
+  }
+
+  /**
+   * Helper to get member last-seen document reference (members)
    */
   getMemberRef(chatId: string, userId: string): DocumentReference {
     return this.getChatRef(chatId).collection('members').doc(userId);
+  }
+
+  /**
+   * Helper to get lastSeen document reference (lastSeen alias)
+   */
+  getLastSeenRef(chatId: string, userId: string): DocumentReference {
+    return this.getChatRef(chatId).collection('lastSeen').doc(userId);
   }
 
   /**
@@ -179,9 +197,13 @@ export class MessageFirestoreRepository {
     userId: string
   ): Promise<{ receipt: ReadReceiptDocument; isNew: boolean }> {
     const receiptRef = this.getReceiptRef(chatId, messageId, userId);
+    const readRef = this.getReadRef(chatId, messageId, userId);
 
     return firestore.runTransaction(async (tx: Transaction) => {
-      const receiptDoc = await tx.get(receiptRef);
+      let receiptDoc = await tx.get(receiptRef);
+      if (!receiptDoc.exists) {
+        receiptDoc = await tx.get(readRef);
+      }
 
       if (receiptDoc.exists) {
         const data = receiptDoc.data()!;
@@ -197,11 +219,13 @@ export class MessageFirestoreRepository {
 
       // First time reading: record server timestamp
       const newReadAt = Timestamp.now();
-      tx.set(receiptRef, {
+      const receiptData = {
         userId,
         messageId,
         readAt: FieldValue.serverTimestamp(),
-      });
+      };
+      tx.set(receiptRef, receiptData);
+      tx.set(readRef, receiptData);
 
       return {
         receipt: {
@@ -227,9 +251,13 @@ export class MessageFirestoreRepository {
     lastSeenAt: Timestamp;
   }> {
     const memberRef = this.getMemberRef(chatId, userId);
+    const lastSeenRef = this.getLastSeenRef(chatId, userId);
 
     return firestore.runTransaction(async (tx: Transaction) => {
-      const memberDoc = await tx.get(memberRef);
+      let memberDoc = await tx.get(memberRef);
+      if (!memberDoc.exists) {
+        memberDoc = await tx.get(lastSeenRef);
+      }
       const now = Timestamp.now();
 
       if (memberDoc.exists) {
@@ -271,17 +299,15 @@ export class MessageFirestoreRepository {
         }
       }
 
-      // Advance last-seen pointer
-      tx.set(
-        memberRef,
-        {
-          userId,
-          lastSeenMessageId: targetMessage.id,
-          lastSeenAt: FieldValue.serverTimestamp(),
-          lastSeenMessageCreatedAt: targetMessage.createdAt,
-        },
-        { merge: true }
-      );
+      // Advance last-seen pointer across both canonical member ref and lastSeen alias
+      const payload = {
+        userId,
+        lastSeenMessageId: targetMessage.id,
+        lastSeenAt: FieldValue.serverTimestamp(),
+        lastSeenMessageCreatedAt: targetMessage.createdAt,
+      };
+      tx.set(memberRef, payload, { merge: true });
+      tx.set(lastSeenRef, payload, { merge: true });
 
       return {
         status: 'updated',
@@ -298,7 +324,10 @@ export class MessageFirestoreRepository {
     chatId: string,
     userId: string
   ): Promise<MemberLastSeenDocument | null> {
-    const doc = await this.getMemberRef(chatId, userId).get();
+    let doc = await this.getMemberRef(chatId, userId).get();
+    if (!doc.exists) {
+      doc = await this.getLastSeenRef(chatId, userId).get();
+    }
     if (!doc.exists) {
       return null;
     }
