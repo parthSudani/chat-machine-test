@@ -5,6 +5,7 @@ import { Request, Response } from 'express';
 export const standardRateLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: env.NODE_ENV === 'test' ? 10000 : env.RATE_LIMIT_MAX,
+  skip: () => process.env.DISABLE_RATE_LIMIT === 'true' || process.env.NODE_ENV === 'test',
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req: Request, res: Response) => {
@@ -21,6 +22,7 @@ export const standardRateLimiter = rateLimit({
 export const authRateLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: env.NODE_ENV === 'test' ? 10000 : env.AUTH_RATE_LIMIT_MAX,
+  skip: () => process.env.DISABLE_RATE_LIMIT === 'true' || process.env.NODE_ENV === 'test',
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req: Request, res: Response) => {

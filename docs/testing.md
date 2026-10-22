@@ -125,4 +125,7 @@ npm run typecheck
 
 # Run linter
 npm run lint
+
+# Run load and throughput benchmark
+npm run test:load
 ```
