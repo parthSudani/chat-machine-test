@@ -131,6 +131,48 @@ curl -X POST http://localhost:3000/chat/create \
 }
 ```
 
+### 4. Mark Message Read: `POST /chat/:chatId/message/:messageId/read`
+**Request**:
+```bash
+curl -X POST http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/message/msg_123/read \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "userId": "11111111-1111-4111-8111-111111111111"
+  }'
+```
+**Response (200 OK)**:
+```json
+{
+  "messageId": "msg_123",
+  "userId": "11111111-1111-4111-8111-111111111111",
+  "readAt": "2026-10-22T08:00:00.000Z",
+  "status": "read"
+}
+```
+
+### 5. Update Last Seen: `POST /chat/:chatId/lastseen`
+**Request**:
+```bash
+curl -X POST http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/lastseen \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "userId": "11111111-1111-4111-8111-111111111111",
+    "messageId": "msg_123"
+  }'
+```
+**Response (200 OK)**:
+```json
+{
+  "chatId": "33333333-3333-4333-8333-333333333333",
+  "userId": "11111111-1111-4111-8111-111111111111",
+  "lastSeenMessageId": "msg_123",
+  "lastSeenAt": "2026-10-22T08:00:00.000Z",
+  "status": "updated"
+}
+```
+
 ## 6. Concurrency & Duplicate Prevention Architecture
 
 - For every direct 1:1 chat between User A and User B, the backend deterministically sorts user IDs canonically:

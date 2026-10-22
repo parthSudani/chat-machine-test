@@ -58,15 +58,34 @@ The testing architecture employs a multi-tiered test suite powered by **Vitest**
 ### Suite 4: Read Receipts & Idempotency
 - `POST /chat/:chatId/message/:messageId/read`:
   - Saves read receipt under `chats/{chatId}/messages/{messageId}/receipts/{userId}`.
-  - Multiple calls from the same user are strictly idempotent.
+  - Multiple calls from the same user are strictly idempotent and preserve original `readAt` timestamp.
   - Non-members cannot record read receipts (403 Forbidden).
+  - Mismatched body `userId` rejected (403 Forbidden).
+  - Missing chat or message returns 404 Not Found.
 
 ### Suite 5: Last-Seen Monotonicity
 - `POST /chat/:chatId/lastseen`:
-  - Advances last seen pointer when given a newer message (status: `updated`).
+  - Advances last-seen pointer when given a newer message (status: `updated`).
   - Ignores update when given an older message than current pointer (status: `ignored_older_than_current`).
+  - Equal timestamps resolved deterministically using document ID tie-breaker.
   - Does not allow pointer to regress backward in time.
-  - Rejects nonexistent message ID (404 Not Found).
+  - Rejects nonexistent message ID (404 Not Found) or mismatched body `userId` (403 Forbidden).
+
+---
+
+## 4. Emulator Testing Instructions
+
+To run live integration tests against the local Firebase Firestore Emulator and PostgreSQL database:
+```bash
+# 1. Start containers in background
+docker compose up -d postgres firestore-emulator
+
+# 2. Run migrations
+npm run prisma:migrate:deploy
+
+# 3. Execute all integration suites
+npm test
+```
 
 ### Suite 6: User Chats Listing
 - `GET /user/:userId/chats`:

@@ -14,13 +14,13 @@
   - [ ] Returns authorized chat messages
   - [ ] Ordered chronologically (stable ordering with document ID tie-breaker)
   - [ ] Supports cursor-based pagination
-- [ ] **POST /chat/:chatId/message/:messageId/read**
-  - [ ] Accepts `userId`
-  - [ ] Saves idempotent read receipt in Firestore under `chats/{chatId}/messages/{messageId}/receipts/{userId}`
-- [ ] **POST /chat/:chatId/lastseen**
-  - [ ] Accepts `userId`, `messageId`
-  - [ ] Updates user's last-seen message and timestamp in `chats/{chatId}/members/{userId}`
-  - [ ] Prevents last-seen pointer from moving backwards (monotonicity guarantee)
+- [x] **POST /chat/:chatId/message/:messageId/read**
+  - [x] Accepts `userId`
+  - [x] Saves idempotent read receipt in Firestore under `chats/{chatId}/messages/{messageId}/receipts/{userId}`
+- [x] **POST /chat/:chatId/lastseen**
+  - [x] Accepts `userId`, `messageId`
+  - [x] Updates user's last-seen message and timestamp in `chats/{chatId}/members/{userId}`
+  - [x] Prevents last-seen pointer from moving backwards (monotonicity guarantee)
 - [ ] **GET /user/:userId/chats**
   - [ ] Returns chats and member IDs from PostgreSQL
   - [ ] Includes pagination support

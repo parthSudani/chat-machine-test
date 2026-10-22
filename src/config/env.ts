@@ -11,6 +11,9 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16).default('development-jwt-super-secret-key-at-least-32-chars!'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   ALLOW_DEV_IMPERSONATION: z.enum(['true', 'false']).transform((v) => v === 'true').default('false'),
+  FIREBASE_PROJECT_ID: z.string().default('chat-backend-dev'),
+  FIRESTORE_EMULATOR_HOST: z.string().optional(),
+  GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
