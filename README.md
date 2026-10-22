@@ -155,7 +155,55 @@ curl -X POST http://localhost:3000/chat/create \
 }
 ```
 
-### 4. Mark Message Read: `POST /chat/:chatId/message/:messageId/read`
+### 4. Send Message: `POST /chat/:chatId/message/send`
+**Request**:
+```bash
+curl -X POST http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/message/send \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "senderId": "11111111-1111-4111-8111-111111111111",
+    "text": "Hello, this is a test message!"
+  }'
+```
+**Response (201 Created)**:
+```json
+{
+  "messageId": "msg_firestore_123",
+  "chatId": "33333333-3333-4333-8333-333333333333",
+  "senderId": "11111111-1111-4111-8111-111111111111",
+  "text": "Hello, this is a test message!",
+  "createdAt": "2026-10-22T08:00:00.000Z"
+}
+```
+
+### 5. Retrieve Messages: `GET /chat/:chatId/messages?limit=50`
+**Request**:
+```bash
+curl -X GET "http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/messages?limit=50" \
+  -H "Authorization: Bearer <token>"
+```
+**Response (200 OK)**:
+```json
+{
+  "messages": [
+    {
+      "id": "msg_firestore_123",
+      "chatId": "33333333-3333-4333-8333-333333333333",
+      "senderId": "11111111-1111-4111-8111-111111111111",
+      "text": "Hello, this is a test message!",
+      "createdAt": "2026-10-22T08:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "limit": 50,
+    "nextCursor": null,
+    "hasMore": false
+  }
+}
+```
+
+### 6. Mark Message Read: `POST /chat/:chatId/message/:messageId/read`
 **Request**:
 ```bash
 curl -X POST http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/message/msg_123/read \
@@ -175,7 +223,7 @@ curl -X POST http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/mes
 }
 ```
 
-### 5. Update Last Seen: `POST /chat/:chatId/lastseen`
+### 7. Update Last Seen: `POST /chat/:chatId/lastseen`
 **Request**:
 ```bash
 curl -X POST http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/lastseen \
@@ -197,7 +245,7 @@ curl -X POST http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/las
 }
 ```
 
-### 6. List User Chats: `GET /user/:userId/chats`
+### 8. List User Chats: `GET /user/:userId/chats`
 **Request**:
 ```bash
 curl -X GET "http://localhost:3000/user/11111111-1111-4111-8111-111111111111/chats?limit=20" \
