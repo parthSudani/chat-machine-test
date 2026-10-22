@@ -9,6 +9,8 @@ import { errorHandler } from './middleware/error.middleware';
 import { requestIdMiddleware } from './middleware/requestId.middleware';
 import { standardRateLimiter, authRateLimiter } from './middleware/rateLimiter.middleware';
 
+import { healthController } from './controllers/health.controller';
+
 export function createApp(): Application {
   const app = express();
 
@@ -26,10 +28,10 @@ export function createApp(): Application {
   // Global rate limiter
   app.use(standardRateLimiter);
 
-  // Health check endpoint
-  app.get('/health', (_req: Request, res: Response) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-  });
+  // Health and Readiness probes
+  app.get('/health', (req: Request, res: Response) => healthController.liveness(req, res));
+  app.get('/health/live', (req: Request, res: Response) => healthController.liveness(req, res));
+  app.get('/health/ready', (req: Request, res: Response) => healthController.readiness(req, res));
 
   // Auth routes with dedicated rate limiter
   app.use('/auth', authRateLimiter, authRoutes);

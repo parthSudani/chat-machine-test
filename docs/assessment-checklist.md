@@ -34,23 +34,23 @@
 - [x] Node.js LTS with TypeScript strict mode enabled (no `any`)
 - [x] Express.js with cleanly separated routes, controllers, services, repositories
 - [x] PostgreSQL + Prisma ORM with migrations
-- [ ] Google Cloud Firestore + Firebase Admin SDK
-- [ ] Dual-mode Firestore: Real GCP Firestore + Firebase Emulator Suite
+- [x] Google Cloud Firestore + Firebase Admin SDK
+- [x] Dual-mode Firestore: Real GCP Firestore + Firebase Emulator Suite
 - [x] Zod schema validation for all inputs and environment variables
 - [x] JWT authentication + bcrypt password hashing
 - [x] Vitest + Supertest automated testing suite
-- [ ] Multi-stage Dockerfile + Docker Compose with health checks
+- [x] Multi-stage Dockerfile + Docker Compose with health checks
 - [x] Structured logging and centralized error handling with safe production error responses
 - [x] CORS, helmet, and input size limits
 - [x] OpenAPI / Swagger specification
 
 ## 4. Architecture & Data Ownership Rules
 - [x] PostgreSQL is the source of truth for Users, Chats, and Memberships
-- [ ] Firestore is the source of truth for Messages, Read Receipts, and Last-Seen state
+- [x] Firestore is the source of truth for Messages, Read Receipts, and Last-Seen state
 - [x] Messages are strictly never stored in PostgreSQL
-- [ ] Firestore paths:
+- [x] Firestore paths:
   - `chats/{chatId}/messages/{messageId}`
   - `chats/{chatId}/messages/{messageId}/receipts/{userId}`
   - `chats/{chatId}/members/{userId}`
-- [ ] Monotonic last-seen update logic via Firestore transaction
+- [x] Monotonic last-seen update logic via Firestore transaction
 - [x] Canonical ordering for 1:1 chat concurrency safety (`participantOneId < participantTwoId`)

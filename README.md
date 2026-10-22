@@ -40,7 +40,31 @@ npm run prisma:generate
 npm run prisma:migrate:deploy
 ```
 
-### Running Locally
+### Running with Docker Compose (Recommended)
+Launch the entire backend stack (PostgreSQL, Firestore Emulator, and Chat API):
+```bash
+docker compose up -d --build
+```
+This automatically runs database migrations on startup and exposes:
+- **Chat API**: `http://localhost:3000`
+- **PostgreSQL**: `localhost:5432`
+- **Firestore Emulator**: `localhost:8080`
+
+Health checks can be queried immediately:
+```bash
+# Liveness probe
+curl http://localhost:3000/health/live
+
+# Readiness probe (verifies database & Firestore connectivity)
+curl http://localhost:3000/health/ready
+```
+
+To stop containers:
+```bash
+docker compose down
+```
+
+### Running Locally (Without Docker)
 ```bash
 # Development mode with hot-reload
 npm run dev

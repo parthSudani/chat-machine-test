@@ -27,15 +27,33 @@ describe('Reliability & Error Handling Tests (Unit/HTTP)', () => {
     expect(res.status).toBe(413);
   });
 
-  it('verifies GET /health returns valid ISO timestamp and healthy status', async () => {
-    const res = await request(app).get('/health');
+  it('verifies GET /health and GET /health/live return valid ISO timestamp and healthy status', async () => {
+    const res1 = await request(app).get('/health');
+    expect(res1.status).toBe(200);
+    expect(res1.body.status).toBe('ok');
+    expect(res1.body.timestamp).toBeDefined();
 
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
-    expect(res.body.timestamp).toBeDefined();
+    const res2 = await request(app).get('/health/live');
+    expect(res2.status).toBe(200);
+    expect(res2.body.status).toBe('ok');
+    expect(res2.body.uptime).toBeDefined();
+    expect(res2.body.timestamp).toBeDefined();
 
-    const date = new Date(res.body.timestamp);
-    expect(date.toISOString()).toBe(res.body.timestamp);
+    const date = new Date(res2.body.timestamp);
+    expect(date.toISOString()).toBe(res2.body.timestamp);
+  });
+
+  it('verifies GET /health/ready returns structured status and dependency checks', async () => {
+    const res = await request(app).get('/health/ready');
+
+    // In unit test environment, status will be 200 (if services available) or 503 (if degraded)
+    expect([200, 503]).toContain(res.status);
+    expect(res.body).toHaveProperty('checks');
+    expect(res.body.checks).toHaveProperty('database');
+    expect(res.body.checks).toHaveProperty('firestore');
+    expect(['up', 'down']).toContain(res.body.checks.database);
+    expect(['up', 'down']).toContain(res.body.checks.firestore);
+    expect(res.body).toHaveProperty('timestamp');
   });
 
   it('verifies that 404 is returned for unknown routes in RFC format', async () => {
