@@ -1,0 +1,190 @@
+openapi: 3.0.3
+info:
+  title: Chat Backend API
+  version: 1.0.0
+  description: High-performance, production-quality Chat Backend technical assessment API.
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: Alice Smith
+                email:
+                  type: string
+                  format: email
+                  example: alice@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: Password123!
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      email:
+                        type: string
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+                  token:
+                    type: string
+        '400':
+          description: Invalid input or weak password
+        '409':
+          description: Email already registered
+
+  /auth/login:
+    post:
+      summary: Authenticate user and obtain JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: alice@example.com
+                password:
+                  type: string
+                  example: Password123!
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                  token:
+                    type: string
+        '401':
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      summary: Get current authenticated user profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+        '401':
+          description: Unauthorized
+
+  /chat/create:
+    post:
+      summary: Create or retrieve a direct 1:1 chat between two users
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userAId
+                - userBId
+              properties:
+                userAId:
+                  type: string
+                  format: uuid
+                  example: 11111111-1111-4111-8111-111111111111
+                userBId:
+                  type: string
+                  format: uuid
+                  example: 22222222-2222-4222-8222-222222222222
+      responses:
+        '201':
+          description: Direct chat created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  chatId:
+                    type: string
+                    format: uuid
+                    example: 33333333-3333-4333-8333-333333333333
+        '200':
+          description: Existing direct chat returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  chatId:
+                    type: string
+                    format: uuid
+                    example: 33333333-3333-4333-8333-333333333333
+        '400':
+          description: Validation error or self-chat attempt
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Caller unauthorized to create chat for other users
+        '404':
+          description: One or both users not found
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

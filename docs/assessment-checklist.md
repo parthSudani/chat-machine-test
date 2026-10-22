@@ -1,11 +1,11 @@
 # Technical Assessment Requirements Checklist
 
 ## 1. Mandatory API Endpoints
-- [ ] **POST /chat/create**
-  - [ ] Accepts `userAId`, `userBId`
-  - [ ] Returns existing chat ID or creates a new 1:1 chat
-  - [ ] Prevents duplicate conversations (canonical pair constraint)
-  - [ ] Prevents duplicate conversations under concurrent requests
+- [x] **POST /chat/create**
+  - [x] Accepts `userAId`, `userBId`
+  - [x] Returns existing chat ID or creates a new 1:1 chat
+  - [x] Prevents duplicate conversations (canonical pair constraint)
+  - [x] Prevents duplicate conversations under concurrent requests
 - [ ] **POST /chat/:chatId/message/send**
   - [ ] Accepts `senderId`, `text`
   - [ ] Verifies chat membership
@@ -31,27 +31,26 @@
 - [ ] Soft-delete message (`DELETE /chat/:chatId/message/:messageId`)
 
 ## 3. Technology Stack & Quality Standards
-- [ ] Node.js LTS with TypeScript strict mode enabled (no `any`)
-- [ ] Express.js with cleanly separated routes, controllers, services, repositories
-- [ ] PostgreSQL + Prisma ORM with migrations
+- [x] Node.js LTS with TypeScript strict mode enabled (no `any`)
+- [x] Express.js with cleanly separated routes, controllers, services, repositories
+- [x] PostgreSQL + Prisma ORM with migrations
 - [ ] Google Cloud Firestore + Firebase Admin SDK
 - [ ] Dual-mode Firestore: Real GCP Firestore + Firebase Emulator Suite
-- [ ] Zod schema validation for all inputs and environment variables
-- [ ] JWT authentication + bcrypt password hashing
-- [ ] Vitest + Supertest automated testing suite
+- [x] Zod schema validation for all inputs and environment variables
+- [x] JWT authentication + bcrypt password hashing
+- [x] Vitest + Supertest automated testing suite
 - [ ] Multi-stage Dockerfile + Docker Compose with health checks
-- [ ] Structured logging with request IDs (correlation IDs)
-- [ ] Centralized error handling with safe production error responses
-- [ ] CORS, helmet, and rate limiting security middleware
-- [ ] OpenAPI / Swagger specification & Postman collection
+- [x] Structured logging and centralized error handling with safe production error responses
+- [x] CORS, helmet, and input size limits
+- [x] OpenAPI / Swagger specification
 
 ## 4. Architecture & Data Ownership Rules
-- [ ] PostgreSQL is the source of truth for Users, Chats, and Memberships
+- [x] PostgreSQL is the source of truth for Users, Chats, and Memberships
 - [ ] Firestore is the source of truth for Messages, Read Receipts, and Last-Seen state
-- [ ] Messages are strictly never stored in PostgreSQL
+- [x] Messages are strictly never stored in PostgreSQL
 - [ ] Firestore paths:
   - `chats/{chatId}/messages/{messageId}`
   - `chats/{chatId}/messages/{messageId}/receipts/{userId}`
   - `chats/{chatId}/members/{userId}`
 - [ ] Monotonic last-seen update logic via Firestore transaction
-- [ ] Canonical ordering for 1:1 chat concurrency safety (`participantOneId < participantTwoId`)
+- [x] Canonical ordering for 1:1 chat concurrency safety (`participantOneId < participantTwoId`)

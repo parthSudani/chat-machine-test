@@ -56,30 +56,26 @@ erDiagram
     Chat ||--|{ ChatMember : "has members"
 
     User {
-        string id PK "cuid / uuid"
+        uuid id PK "UUID"
         string email UK "unique email"
         string passwordHash "bcrypt hashed"
-        string displayName "user name"
+        string name "user full name"
         datetime createdAt "default now"
         datetime updatedAt "updated timestamp"
     }
 
     Chat {
-        string id PK "cuid / uuid"
-        enum type "DIRECT | GROUP"
-        string title "optional, for group chats"
-        string participantOneId "lexicographically smaller ID for 1:1 chats"
-        string participantTwoId "lexicographically larger ID for 1:1 chats"
-        string createdById FK "User.id"
+        uuid id PK "UUID"
+        enum type "DIRECT"
+        uuid participantOneId "lexicographically smaller UUID for 1:1 chats"
+        uuid participantTwoId "lexicographically larger UUID for 1:1 chats"
         datetime createdAt "default now"
         datetime updatedAt "updated timestamp"
     }
 
     ChatMember {
-        string id PK "cuid / uuid"
-        string chatId FK "Chat.id"
-        string userId FK "User.id"
-        enum role "MEMBER | ADMIN | OWNER"
+        uuid chatId PK,FK "Chat.id"
+        uuid userId PK,FK "User.id"
         datetime joinedAt "default now"
     }
 ```

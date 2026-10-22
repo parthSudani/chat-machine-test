@@ -87,17 +87,10 @@ Creates or returns an existing 1:1 chat between two users.
   - `userAId` cannot equal `userBId` (cannot create 1:1 chat with oneself).
   - Authenticated user must be either `userAId` or `userBId`.
 
-- **Response (200 OK or 201 Created)**:
+- **Response (201 Created or 200 OK)**:
 ```json
 {
-  "success": true,
-  "data": {
-    "chatId": "cuid_chat_1",
-    "type": "DIRECT",
-    "isNew": true,
-    "members": ["cuid_user_1", "cuid_user_2"],
-    "createdAt": "2026-10-22T08:05:00.000Z"
-  }
+  "chatId": "33333333-3333-4333-8333-333333333333"
 }
 ```
 
