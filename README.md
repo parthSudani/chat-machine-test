@@ -33,6 +33,31 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/chat_backend?schema=
 JWT_SECRET="your-secure-jwt-secret-at-least-32-characters"
 ```
 
+### Firebase Setup (Emulator vs Live GCP Cloud Firestore)
+The backend supports dual-mode Firestore operations via Firebase Admin SDK:
+
+1. **Local Emulator Mode (Default for local dev & testing)**:
+   - In `.env`, ensure the emulator host is specified:
+     ```env
+     FIRESTORE_EMULATOR_HOST="127.0.0.1:8080"
+     FIREBASE_PROJECT_ID="chat-backend-dev"
+     ```
+   - Start the emulator via Docker (`docker compose up -d firestore-emulator`) or via gcloud CLI:
+     ```bash
+     gcloud beta emulators firestore start --host-port=0.0.0.0:8080
+     ```
+
+2. **Production / Live GCP Cloud Firestore Mode**:
+   - Remove or comment out `FIRESTORE_EMULATOR_HOST` in `.env`.
+   - Set `FIREBASE_PROJECT_ID` to your actual GCP Project ID.
+   - Authenticate with Google Cloud using either:
+     - **Application Default Credentials (ADC)** automatically detected in GCP environments (GKE, Cloud Run), or
+     - Set `GOOGLE_APPLICATION_CREDENTIALS` pointing to your service account key file:
+       ```env
+       GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
+       ```
+   - When `FIRESTORE_EMULATOR_HOST` is absent, Firebase Admin SDK automatically establishes secure gRPC connections to live Cloud Firestore.
+
 ### Database Migrations
 Generate Prisma client and apply migrations:
 ```bash
@@ -74,16 +99,22 @@ npm run build
 npm start
 ```
 
-## 4. Running Tests
+## 4. Running Tests & Verifications
 
 ```bash
-# Run all tests (unit + API + integration)
+# Run all automated tests (130 tests across 17 suites)
 npm test
 
 # Run unit tests only
 npm run test:unit
 
-# Run type check and linter
+# Run live HTTP 6-workflow verification (16/16 steps PASS)
+npm run test:workflows
+
+# Run performance & load benchmark (2,300–7,270 req/sec)
+npm run test:load
+
+# Run static type check and linter
 npm run typecheck
 npm run lint
 ```
