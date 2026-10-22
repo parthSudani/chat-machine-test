@@ -130,6 +130,48 @@ describe('Messaging HTTP API (Supertest)', () => {
       expect(res.body.text).toBe('Hello, Bob!');
       expect(res.body.createdAt).toBe(nowIso);
     });
+
+    it('client-supplied timestamps in body cannot override server timestamp', async () => {
+      const serverTimestampIso = '2026-10-22T12:00:00.000Z';
+      const clientSuppliedTime = '1999-01-01T00:00:00.000Z';
+
+      vi.spyOn(messageService, 'sendMessage').mockResolvedValue({
+        id: 'msg-timestamp-test',
+        messageId: 'msg-timestamp-test',
+        chatId,
+        senderId: aliceId,
+        text: 'Timestamp test',
+        createdAt: serverTimestampIso,
+      });
+
+      const res = await request(app)
+        .post(`/chat/${chatId}/message/send`)
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .send({
+          senderId: aliceId,
+          text: 'Timestamp test',
+          createdAt: clientSuppliedTime,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.createdAt).toBe(serverTimestampIso);
+      expect(res.body.createdAt).not.toBe(clientSuppliedTime);
+    });
+
+    it('handles Firebase write failure safely with 500 error', async () => {
+      vi.spyOn(messageService, 'sendMessage').mockRejectedValue(
+        new Error('Firebase service unavailable')
+      );
+
+      const res = await request(app)
+        .post(`/chat/${chatId}/message/send`)
+        .set('Authorization', `Bearer ${aliceToken}`)
+        .send({ senderId: aliceId, text: 'Hello' });
+
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error');
+      expect(res.body.error.code).toBe('INTERNAL_SERVER_ERROR');
+    });
   });
 
   describe('GET /chat/:chatId/messages', () => {
@@ -183,6 +225,66 @@ describe('Messaging HTTP API (Supertest)', () => {
       expect(res.body.messages[0].id).toBe('msg-1');
       expect(res.body.pagination.limit).toBe(50);
       expect(res.body.pagination.hasMore).toBe(false);
+    });
+
+    it('returns empty array when conversation has no messages', async () => {
+      vi.spyOn(messageService, 'getMessages').mockResolvedValue({
+        messages: [],
+        pagination: {
+          limit: 50,
+          nextCursor: null,
+          hasMore: false,
+        },
+      });
+
+      const res = await request(app)
+        .get(`/chat/${chatId}/messages`)
+        .set('Authorization', `Bearer ${aliceToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.messages).toEqual([]);
+      expect(res.body.pagination.hasMore).toBe(false);
+      expect(res.body.pagination.nextCursor).toBeNull();
+    });
+
+    it('rejects invalid cursor with 400', async () => {
+      vi.spyOn(messageService, 'getMessages').mockRejectedValue(
+        AppError.badRequest('Invalid pagination cursor: message does not exist', 'INVALID_CURSOR')
+      );
+
+      const res = await request(app)
+        .get(`/chat/${chatId}/messages?cursor=invalid-cursor-id`)
+        .set('Authorization', `Bearer ${aliceToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('INVALID_CURSOR');
+    });
+
+    it('rejects cursor from another chat with 400', async () => {
+      vi.spyOn(messageService, 'getMessages').mockRejectedValue(
+        AppError.badRequest('Invalid pagination cursor: message does not belong to this chat', 'INVALID_CURSOR')
+      );
+
+      const res = await request(app)
+        .get(`/chat/${chatId}/messages?cursor=foreign-msg-id`)
+        .set('Authorization', `Bearer ${aliceToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('INVALID_CURSOR');
+    });
+
+    it('handles Firestore query failure safely with 500 error', async () => {
+      vi.spyOn(messageService, 'getMessages').mockRejectedValue(
+        new Error('Firestore connection timeout')
+      );
+
+      const res = await request(app)
+        .get(`/chat/${chatId}/messages`)
+        .set('Authorization', `Bearer ${aliceToken}`);
+
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error');
+      expect(res.body.error.code).toBe('INTERNAL_SERVER_ERROR');
     });
   });
 });

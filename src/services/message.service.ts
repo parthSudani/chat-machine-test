@@ -13,6 +13,7 @@ export interface SendMessageDTO {
 }
 
 export interface SendMessageResult {
+  id?: string;
   messageId: string;
   chatId: string;
   senderId: string;
@@ -82,6 +83,7 @@ export class MessageService {
       : new Date().toISOString();
 
     return {
+      id: msg.id,
       messageId: msg.id,
       chatId,
       senderId,

@@ -5,6 +5,7 @@ import {
   DocumentReference,
   Transaction,
 } from '../config/firebase';
+import { AppError } from '../utils/appError';
 
 export interface FirestoreMessage {
   id: string;
@@ -158,9 +159,20 @@ export class MessageFirestoreRepository {
 
     if (cursor) {
       const cursorDoc = await this.getMessageRef(chatId, cursor).get();
-      if (cursorDoc.exists) {
-        query = query.startAfter(cursorDoc);
+      if (!cursorDoc.exists) {
+        throw AppError.badRequest(
+          `Invalid pagination cursor: message '${cursor}' does not exist in chat '${chatId}'`,
+          'INVALID_CURSOR'
+        );
       }
+      const cursorData = cursorDoc.data();
+      if (cursorData?.chatId !== chatId) {
+        throw AppError.badRequest(
+          `Invalid pagination cursor: message '${cursor}' does not belong to chat '${chatId}'`,
+          'INVALID_CURSOR'
+        );
+      }
+      query = query.startAfter(cursorDoc);
     }
 
     const snapshot = await query.get();

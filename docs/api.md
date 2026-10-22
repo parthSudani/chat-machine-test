@@ -99,30 +99,41 @@ Creates or returns an existing 1:1 chat between two users.
 ### 2. POST `/chat/:chatId/message/send`
 Sends a message to an authorized chat, persisted in Firestore.
 
-- **Authorization**: Sender must be an active member of `chatId`.
+- **Authorization**: Sender must be an active member of `chatId`. Request must include a valid JWT in the `Authorization: Bearer <token>` header.
+- **Identity Invariant**: The body `senderId` must match the authenticated caller (`req.user.id`). Identity spoofing is strictly rejected with `403 Forbidden`.
+- **Timestamp Guarantee**: Messages are persisted using Firestore's `FieldValue.serverTimestamp()`. Any client-supplied timestamps are ignored to guarantee clock consistency.
 - **Request Body**:
 ```json
 {
-  "senderId": "cuid_user_1",
+  "senderId": "11111111-1111-4111-8111-111111111111",
   "text": "Hello, this is a test message!"
 }
 ```
 - **Validation Rules**:
-  - `text`: Non-empty string, max length 4000 characters.
-  - `senderId`: Must match the authenticated user.
+  - `text`: Non-empty string after trimming, max length 4000 characters.
+  - `senderId`: Valid UUID matching `req.user.id`.
 
 - **Response (201 Created)**:
 ```json
 {
-  "success": true,
-  "data": {
-    "messageId": "msg_firestore_abc123",
-    "chatId": "cuid_chat_1",
-    "senderId": "cuid_user_1",
-    "text": "Hello, this is a test message!",
-    "createdAt": "2026-10-22T08:06:12.345Z"
-  }
+  "id": "msg_firestore_abc123",
+  "messageId": "msg_firestore_abc123",
+  "chatId": "33333333-3333-4333-8333-333333333333",
+  "senderId": "11111111-1111-4111-8111-111111111111",
+  "text": "Hello, this is a test message!",
+  "createdAt": "2026-10-22T08:06:12.345Z"
 }
+```
+
+#### Example cURL Request:
+```bash
+curl -X POST http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/message/send \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT_TOKEN>" \
+  -d '{
+    "senderId": "11111111-1111-4111-8111-111111111111",
+    "text": "Hello from assessment runner!"
+  }'
 ```
 
 ---
@@ -131,34 +142,49 @@ Sends a message to an authorized chat, persisted in Firestore.
 Fetches chronologically ordered messages from Firestore for an authorized chat.
 
 - **Query Parameters**:
-  - `limit` (integer, default: 50, min: 1, max: 100): Page size.
-  - `cursor` (string, optional): Message ID to paginate from (cursor-based pagination).
-  - `order` (string, optional, default: `asc`): Order direction (`asc` or `desc`).
-- **Authorization**: Requester must be a member of `chatId`.
+  - `limit` (integer, optional, default: `50`, min: `1`, max: `100`): Page size. Values `< 1` default to 50; values `> 100` are capped at 100.
+  - `cursor` (string, optional): Message ID to paginate from.
+- **Ordering Guarantee**: Ascending chronological order (`createdAt asc`). Stable tie-breaking is enforced via Firestore document ID (`__name__ asc`).
+- **Cursor Validation**: Cursors must correspond to an existing message belonging to `chatId`. Invalid or cross-chat cursors return `400 Bad Request` (`INVALID_CURSOR`).
+- **Authorization**: Caller must be a verified member of `chatId`.
 
 - **Response (200 OK)**:
 ```json
 {
-  "success": true,
-  "data": {
-    "messages": [
-      {
-        "id": "msg_firestore_abc123",
-        "chatId": "cuid_chat_1",
-        "senderId": "cuid_user_1",
-        "text": "Hello, this is a test message!",
-        "createdAt": "2026-10-22T08:06:12.345Z",
-        "isEdited": false,
-        "isDeleted": false
-      }
-    ],
-    "pagination": {
-      "limit": 50,
-      "nextCursor": "msg_firestore_abc123",
-      "hasMore": false
+  "messages": [
+    {
+      "id": "msg-1",
+      "chatId": "33333333-3333-4333-8333-333333333333",
+      "senderId": "11111111-1111-4111-8111-111111111111",
+      "text": "First message",
+      "createdAt": "2026-10-22T08:00:00.000Z"
+    },
+    {
+      "id": "msg-2",
+      "chatId": "33333333-3333-4333-8333-333333333333",
+      "senderId": "22222222-2222-4222-8222-222222222222",
+      "text": "Second message",
+      "createdAt": "2026-10-22T08:01:00.000Z"
     }
+  ],
+  "pagination": {
+    "limit": 50,
+    "nextCursor": "msg-2",
+    "hasMore": false
   }
 }
+```
+
+#### Example cURL: Fetch First Page (Limit 50)
+```bash
+curl -X GET "http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/messages?limit=50" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+#### Example cURL: Fetch Subsequent Page via Cursor
+```bash
+curl -X GET "http://localhost:3000/chat/33333333-3333-4333-8333-333333333333/messages?limit=50&cursor=msg-2" \
+  -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
 ---

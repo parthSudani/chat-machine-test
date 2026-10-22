@@ -63,6 +63,31 @@ describe('MessageService (Unit)', () => {
       }
     });
 
+    it('rejects attempt when chat does not exist', async () => {
+      vi.mocked(mockChatRepo.findById).mockResolvedValue(null);
+
+      await expect(
+        service.sendMessage({
+          chatId,
+          senderId: callerId,
+          text: 'Hello',
+          callerId,
+        })
+      ).rejects.toThrow(AppError);
+
+      try {
+        await service.sendMessage({
+          chatId,
+          senderId: callerId,
+          text: 'Hello',
+          callerId,
+        });
+      } catch (err: unknown) {
+        expect((err as AppError).statusCode).toBe(404);
+        expect((err as AppError).code).toBe('CHAT_NOT_FOUND');
+      }
+    });
+
     it('rejects attempt when caller is not a member of the chat', async () => {
       vi.mocked(mockChatRepo.findById).mockResolvedValue({
         id: chatId,
@@ -126,6 +151,29 @@ describe('MessageService (Unit)', () => {
   });
 
   describe('getMessages', () => {
+    it('rejects attempt when chat does not exist', async () => {
+      vi.mocked(mockChatRepo.findById).mockResolvedValue(null);
+
+      await expect(
+        service.getMessages({
+          chatId,
+          limit: 50,
+          callerId,
+        })
+      ).rejects.toThrow(AppError);
+
+      try {
+        await service.getMessages({
+          chatId,
+          limit: 50,
+          callerId,
+        });
+      } catch (err: unknown) {
+        expect((err as AppError).statusCode).toBe(404);
+        expect((err as AppError).code).toBe('CHAT_NOT_FOUND');
+      }
+    });
+
     it('rejects attempt when caller is not a member of the chat', async () => {
       vi.mocked(mockChatRepo.findById).mockResolvedValue({
         id: chatId,
@@ -175,6 +223,66 @@ describe('MessageService (Unit)', () => {
       expect(result.pagination.limit).toBe(50);
       expect(result.pagination.hasMore).toBe(false);
       expect(result.pagination.nextCursor).toBeNull();
+    });
+
+    it('handles empty conversation correctly', async () => {
+      vi.mocked(mockChatRepo.findById).mockResolvedValue({
+        id: chatId,
+      } as unknown as ChatWithMembers);
+      vi.mocked(mockChatRepo.findMembership).mockResolvedValue({
+        chatId,
+        userId: callerId,
+        joinedAt: new Date(),
+      } as ChatMember);
+
+      vi.mocked(mockFirestoreRepo.getChatMessages).mockResolvedValue({
+        messages: [],
+        nextCursor: null,
+      });
+
+      const result = await service.getMessages({
+        chatId,
+        limit: 50,
+        callerId,
+      });
+
+      expect(result.messages).toEqual([]);
+      expect(result.pagination.hasMore).toBe(false);
+      expect(result.pagination.nextCursor).toBeNull();
+    });
+
+    it('returns nextCursor when more messages are available', async () => {
+      vi.mocked(mockChatRepo.findById).mockResolvedValue({
+        id: chatId,
+      } as unknown as ChatWithMembers);
+      vi.mocked(mockChatRepo.findMembership).mockResolvedValue({
+        chatId,
+        userId: callerId,
+        joinedAt: new Date(),
+      } as ChatMember);
+
+      const msg1: FirestoreMessage = {
+        id: 'msg-1',
+        chatId,
+        senderId: callerId,
+        text: 'First message',
+        createdAt: Timestamp.fromMillis(1000),
+      };
+
+      vi.mocked(mockFirestoreRepo.getChatMessages).mockResolvedValue({
+        messages: [msg1],
+        nextCursor: 'msg-1',
+      });
+
+      const result = await service.getMessages({
+        chatId,
+        limit: 1,
+        callerId,
+      });
+
+      expect(result.messages.length).toBe(1);
+      expect(result.pagination.hasMore).toBe(true);
+      expect(result.pagination.nextCursor).toBe('msg-1');
     });
   });
 });
