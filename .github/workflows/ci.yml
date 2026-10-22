@@ -1,0 +1,79 @@
+name: CI / Automated QA Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test-and-build:
+    name: Build, Lint, Typecheck & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chat_backend_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint Codebase (ESLint)
+        run: npm run lint
+
+      - name: Type Check (TypeScript strict)
+        run: npm run typecheck
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Apply Database Migrations (Test DB)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chat_backend_test?schema=public
+        run: npx prisma migrate deploy
+
+      - name: Setup Firebase Emulator
+        uses: jsdaniell/setup-firebase-emulator@v1
+        with:
+          version: 'latest'
+          emulators: 'firestore'
+
+      - name: Run Automated Test Suites with Coverage
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chat_backend_test?schema=public
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
+          FIREBASE_PROJECT_ID: chat-backend-test
+          JWT_SECRET: ci-secret-key-at-least-32-characters-length!
+        run: npm run test:coverage
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Production Build
+        run: npm run build

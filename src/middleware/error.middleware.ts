@@ -15,6 +15,17 @@ export const errorHandler = (
     return;
   }
 
+  // Handle body-parser / express syntax or payload limit errors (e.g. malformed JSON 400, payload too large 413)
+  const httpStatus =
+    (err as { status?: number; statusCode?: number }).status ||
+    (err as { status?: number; statusCode?: number }).statusCode;
+
+  if (httpStatus && typeof httpStatus === 'number' && httpStatus >= 400 && httpStatus < 500) {
+    const code = httpStatus === 413 ? 'PAYLOAD_TOO_LARGE' : 'BAD_REQUEST';
+    sendError(res, httpStatus, err.message, code);
+    return;
+  }
+
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2002') {
       const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : 'field';
