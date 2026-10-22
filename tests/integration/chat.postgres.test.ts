@@ -1,9 +1,30 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import net from 'net';
 import { prisma } from '../../src/config/prisma';
 import { chatRepository } from '../../src/repositories/chat.repository';
 import { userRepository } from '../../src/repositories/user.repository';
 import { chatService } from '../../src/services/chat.service';
 import bcrypt from 'bcryptjs';
+
+function isPortOpen(host: string, port: number, timeoutMs = 800): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.once('error', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.connect(port, host);
+  });
+}
 
 describe('PostgreSQL Database & Concurrency Integration Tests', () => {
   let isDbAvailable = false;
@@ -11,6 +32,27 @@ describe('PostgreSQL Database & Concurrency Integration Tests', () => {
   let testUserBId: string;
 
   beforeAll(async () => {
+    const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/chat_backend';
+    let host = 'localhost';
+    let port = 5432;
+    try {
+      const parsed = new URL(dbUrl);
+      host = parsed.hostname || 'localhost';
+      port = Number(parsed.port) || 5432;
+    } catch {
+      // fallback to localhost:5432
+    }
+
+    const portOpen = await isPortOpen(host, port, 600);
+    if (!portOpen) {
+      console.warn(
+        '\n⚠️  PostgreSQL is currently not reachable on ' + host + ':' + port + '. Skipping live DB integration tests.\n' +
+        '👉 To start PostgreSQL, run: docker compose up -d postgres\n'
+      );
+      isDbAvailable = false;
+      return;
+    }
+
     try {
       await prisma.$connect();
       // Quick query to test connection
