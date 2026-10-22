@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env';
@@ -8,6 +8,7 @@ import { userRoutes } from './routes/user.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { requestIdMiddleware } from './middleware/requestId.middleware';
 import { standardRateLimiter, authRateLimiter } from './middleware/rateLimiter.middleware';
+import { AppError } from './utils/appError';
 
 import { healthController } from './controllers/health.controller';
 
@@ -43,6 +44,11 @@ export function createApp(): Application {
 
   app.use('/user', userRoutes);
   app.use('/api/v1/user', userRoutes);
+
+  // 404 handler for unknown routes
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    next(new AppError(404, `Route not found: ${req.method} ${req.originalUrl}`, 'NOT_FOUND'));
+  });
 
   // Centralized Error Handling
   app.use(errorHandler);
